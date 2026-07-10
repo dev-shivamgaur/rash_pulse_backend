@@ -1,0 +1,23 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  basePrice    Float    // Baseline price before flash sale surge
+  currentPrice Float    // Real-time synced price (updates dynamically)
+  initialStock Int      // Starting stock for flash sale (e.g., 100)
+  currentStock Int      // Decrementing counter
+  isLive       Boolean  @default(false) // Flash sale active state
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("products")
+}

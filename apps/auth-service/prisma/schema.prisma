@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  user
+  admin
+}
+
+model User {
+  id                    String   @id @default(uuid())
+  phoneNumber           String   @unique @map("phone_number")
+  firstName             String?  @map("first_name")
+  lastName              String?  @map("last_name")
+  roles                 Role[]   @default([user])
+  isActive              Boolean  @default(true) @map("is_active")
+  isPhoneNumberVerified Boolean  @default(false) @map("is_phone_number_verified")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  devices       Device[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model Device {
+  id              String @id @default(uuid())
+  userId          String  @map("user_id")
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fingerprint     String  @map("fingerprint")
+  deviceName      String? @map("device_name")
+  userAgent       String? @map("user_agent")
+  ipAddress       String? @map("ip_address")
+
+  lastUsedAt      DateTime @default(now()) @map("last_used_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  refreshTokens   RefreshToken[]
+
+  @@index([userId])
+  @@map("devices")
+
+}
+
+
+model RefreshToken {
+  id        String  @id @default(uuid())
+  tokenHash String  @map("token_hash")
+  userId    String  @map("user_id")
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId  String? @map("device_id")
+  device    Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime @map("expires_at")
+  revoked   Boolean  @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([deviceId])
+  @@map("refresh_tokens")
+
+}
+
+
+model WhitelistedPhoneNumber {
+  id            String  @id    @default(uuid())
+  phoneNumber   String  @unique @map("phone_number")
+  otp           String 
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([phoneNumber])
+  @@map("whitelisted_phone_numbers")
+}

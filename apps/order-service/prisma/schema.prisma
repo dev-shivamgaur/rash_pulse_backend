@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+model Order {
+  id             String      @id @default(uuid())
+  userId         String      // Referencing Auth Service User ID without strict DB relation
+  productId      String      // Referencing Products Service Product ID
+  purchasedPrice Float       // The surge price at which user locked the deal
+  status         OrderStatus @default(PENDING)
+  queueId        String      @unique // To map back tracking status for frontend polling
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@map("orders")
+}
