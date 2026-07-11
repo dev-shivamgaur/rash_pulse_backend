@@ -4,6 +4,7 @@ import { OrderServiceController } from './order-service.controller';
 import { OrderService } from './order-service.service';
 import { RabbitMQModule } from './common/rabbitmq/rabbitmq.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { JwtSharedModule } from 'libs/jwt-shared/src';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { PrismaModule } from './prisma/prisma.module';
       envFilePath: 'apps/order-service/.env',
     }),
     PrismaModule,
+    JwtSharedModule,
     forwardRef(()=> RabbitMQModule,
   ) 
   ],

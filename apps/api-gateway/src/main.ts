@@ -8,6 +8,7 @@ import { ApiGatewayModule } from './api-gateway.module';
 import { GATEWAY_SERVICE_ROUTES } from './gateway.config';
 import { setupGatewayProxies } from './setup-proxy';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import cookiParser from "cookie-parser"
 
 async function bootstrap() {
   const app =
@@ -16,6 +17,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   app.enableCors();
+  app.use(cookiParser())
 
   app.setGlobalPrefix('api');
 

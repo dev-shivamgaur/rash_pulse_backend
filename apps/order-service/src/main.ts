@@ -1,6 +1,8 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
+import cookieParser from "cookie-parser"
+
 // 🛑 CRITICAL FIX: NestJS App create hone se PEHLE hi env file load kar lo
 dotenv.config({ path: path.resolve(process.cwd(), 'apps/order-service/.env') });
 
@@ -22,6 +24,9 @@ async function bootstrap() {
       'http://localhost:8000',
     credentials: true,
   });
+
+  app.use(cookieParser());
+
 
   setupMicroserviceSwagger(app, configService, {
     title: 'RashPulse Order Microservice',

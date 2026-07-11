@@ -5,12 +5,14 @@ import { ConfigModule } from '@nestjs/config';
 import { RedisGatewayModule } from './common/redis/redis.module';
 // import { GatewayAuthGuard } from './guard/gateway-auth.guard';
 import { RabbitMQModule } from './common/rabbitmq/rabbitmq.module';
+import { JwtSharedModule } from 'libs/jwt-shared/src';
 
 @Module({
   imports: [ConfigModule.forRoot({
     isGlobal: true,
     envFilePath: 'apps/api-gateway/.env',
   }),
+  JwtSharedModule,
   RedisGatewayModule,
   RabbitMQModule
 ],

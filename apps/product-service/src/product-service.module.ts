@@ -4,6 +4,7 @@ import { ProductServiceController } from './product-service.controller';
 import { ProductService } from './product-service.service';
 import { RedisProductModule } from './common/redis/redis.module';
 import { ProductMQModule } from './common/rabbitmq/rabbitmq.module';
+import { JwtSharedModule } from 'libs/jwt-shared/src';
 
 
 @Module({
@@ -13,6 +14,7 @@ import { ProductMQModule } from './common/rabbitmq/rabbitmq.module';
       envFilePath: 'apps/product-service/.env',
     }),
     RedisProductModule,
+    JwtSharedModule,
      forwardRef(()=>ProductMQModule) 
   ],
   controllers: [ProductServiceController],

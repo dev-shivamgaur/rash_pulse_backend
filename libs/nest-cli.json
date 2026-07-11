@@ -1,0 +1,16 @@
+{
+  "projects": {
+    "jwt-shared": {
+      "type": "library",
+      "root": "libs/jwt-shared",
+      "entryFile": "index",
+      "sourceRoot": "libs/jwt-shared/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/jwt-shared/tsconfig.lib.json"
+      }
+    }
+  },
+  "compilerOptions": {
+    "webpack": true
+  }
+}
