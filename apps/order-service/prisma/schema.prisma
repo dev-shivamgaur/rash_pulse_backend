@@ -8,20 +8,43 @@ datasource db {
 }
 
 enum OrderStatus {
-  PENDING
-  CONFIRMED
-  FAILED
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+  EXPIRED
+  REFUND_INITIATED   // Refund process shuru ho gaya hai
+  REFUNDED           // Paise user ke account me wapas chale gaye hain
+  REFUND_FAILED      // Gateway se refund fail ho gaya (Manual action required)
 }
 
+// 2. Main Order Model
 model Order {
-  id             String      @id @default(uuid())
-  userId         String      // Referencing Auth Service User ID without strict DB relation
-  productId      String      // Referencing Products Service Product ID
-  purchasedPrice Float       // The surge price at which user locked the deal
-  status         OrderStatus @default(PENDING)
-  queueId        String      @unique // To map back tracking status for frontend polling
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  id              String      @id @default(uuid()) // Primary key (UUID string)
+  orderId         String?      @unique              // Humare logic se bana unique business order id
+  reservationId   String      @unique              // Product Service ka temporary lock identity
+  userId          String     
+  productId       String
+  quantity        Int         @default(1)
+  priceAtPurchase Decimal     @db.Decimal(10, 2)   // Surge price
+  status          OrderStatus @default(PENDING_PAYMENT)
+  queueId        String       
+  
+  // Payment Details
+  paymentId       String?                          // Razorpay/Stripe success par aane wali Payment ID
+  
+  // Refund Details (Nayi fields refund track karne ke liye)
+  refundId        String?     @unique              // Gateway se mili official Refund ID (e.g., rfnd_XYZ123)
+  refundedAmount  Decimal?    @db.Decimal(10, 2)   // Kitna amount refund kiya (Partial refund safety ke liye)
+  refundReason    String?                          // User ne cancel kiya, out of stock, etc.
+  refundedAt      DateTime?                        // Refund kis time confirm hua
 
+  expiresAt       DateTime                         // 5-min safety timestamp
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([userId])      
+  @@index([paymentId])    
+  @@index([reservationId]) 
+  @@index([refundId])       // Refund ID par indexing taaki status fast update ho sake
   @@map("orders")
 }

@@ -1,9 +1,9 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { OrderService } from './order-service.service';
 import type{ Request } from 'express';
 
-import {JwtPayload, JwtAuthGuard, RolesGuard, Roles, Role } from "libs/jwt-shared/src/index"
+import {type JwtPayload, JwtAuthGuard, RolesGuard, Roles, Role, CurrentUser } from "libs/jwt-shared/src/index"
 
 
 @ApiTags('Orders')
@@ -25,8 +25,17 @@ export class OrderServiceController {
   @Get('status/:trackingId') 
   @ApiOperation({ summary: 'Check order status by tracking ID (Queue ID)' })
   @ApiOkResponse({ description: 'Returns current order processing status' })
-  async getOrderStatus(@Param('trackingId') trackingId: string) {
+  async getOrderStatus(@Param('orderId') orderId: string) {
     // Controller request ko lekar service ke paas bhejega
-    return await this.orderServiceService.checkOrderStatus(trackingId);
+    return await this.orderServiceService.checkOrderStatus(orderId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @Get('/get-order/:id')
+  async getOrderDetails(@CurrentUser() user: JwtPayload, @Param('id') id: string ) { 
+    return this.orderServiceService.getOrderDetails(user, id)
+  }
+
+  
 }

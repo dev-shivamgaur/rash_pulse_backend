@@ -5,6 +5,7 @@ import { OrderService } from './order-service.service';
 import { RabbitMQModule } from './common/rabbitmq/rabbitmq.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { JwtSharedModule } from 'libs/jwt-shared/src';
+import { RedisOrderModule } from './common/redis/redis.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { JwtSharedModule } from 'libs/jwt-shared/src';
     }),
     PrismaModule,
     JwtSharedModule,
+    RedisOrderModule,
     forwardRef(()=> RabbitMQModule,
   ) 
   ],

@@ -28,4 +28,11 @@ export const GATEWAY_SERVICE_ROUTES: GatewayServiceRoute[] = [
     defaultTarget: 'http://localhost:5003',
     docsJsonPath: '/api/v1/docs-json/products',
   },
+  {
+    name: 'Payment Service',
+    gatewayPrefix: "/api/v1/payments",
+    targetEnvKey: 'PAYMENT_SERVICE_URL',
+    defaultTarget: 'http://localhost:5004',
+    docsJsonPath: '/api/v1/docs-json/payments'
+  }
 ];

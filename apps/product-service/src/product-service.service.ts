@@ -1,54 +1,101 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { RedisService } from './common/redis/redis.service';
+import { ProductConsumerService } from './common/rabbitmq/rabbitmq.service';
+
+type PrductQueueData = {
+  productId: string,
+  userId: string,
+  purchasedPrice: number,
+  queueId: string,
+  timestamp: Date,
+  
+  
+}
+
+type OrderServiceData = PrductQueueData & {
+  reservationToken: string,
+  expiresAt: number;
+};
+
 
 @Injectable()
 export class ProductService {
   private readonly logger = new Logger(ProductService.name);
 
-  constructor(private readonly redisService: RedisService) {}
+
+  constructor(
+    
+    private readonly redisService: RedisService,
+    private readonly rabbitMqService: ProductConsumerService
+  ) {}
 
   getHello(): string {
     return 'Hello I am product!';
   }
 
   // 📈 AAPKA CORRECTED MATHEMATICAL PRICING ENGINE LOGIC (Called by Consumer)
-  async handleDynamicPricingUpdate(payload: { productId: string }) {
+  async handleDynamicPricingUpdate(payload: PrductQueueData) {
     const redis = this.redisService.getClient();
-    const { productId } = payload;
-
+    const { productId, userId } = payload;
+    const locked = `locked:productId:${productId}:userId:${userId}`;
+    const reservationToken = `res_tok_${crypto.randomUUID()}`;
+    const HOLD_TIME_SECONDS = 300; 
+  
     try {
-      this.logger.log(`🔄 Running Pricing Engine for Product ID: ${productId}`);
-
-      // 1. Redis se values fetch karna (Fallbacks ke sath)
+      this.logger.log(`🔄 Running Pricing Engine for Product ID: ${productId} for User: ${userId}`);
+  
       const currentStockStr = await redis.get(`product:${productId}:stock`);
       const initialStockStr = await redis.get(`product:${productId}:initial_stock`);
       const basePriceStr = await redis.get(`product:${productId}:base_price`);
-
+  
       const currentStock = parseInt(currentStockStr || '0', 10);
       const initialStock = parseInt(initialStockStr || '1000', 10);
       const basePrice = parseFloat(basePriceStr || '500');
-
-      // 2. Sales Percentage Calculate karna: ((Initial - Current) / Initial) * 100
+  
       const salesPercentage = ((initialStock - currentStock) / initialStock) * 100;
       let finalSurgePrice = basePrice;
-
-      // 3. Dynamic Threshold Check Rules
+  
       if (salesPercentage > 85) {
-        finalSurgePrice = basePrice * 1.50; // 50% price increase
+        finalSurgePrice = basePrice * 1.50;
       } else if (salesPercentage > 60) {
-        finalSurgePrice = basePrice * 1.30; // 30% price increase
+        finalSurgePrice = basePrice * 1.30;
       } else if (salesPercentage > 30) {
-        finalSurgePrice = basePrice * 1.15; // 15% price increase
+        finalSurgePrice = basePrice * 1.15;
       }
-
-      // 4. Redis mein updated current price set karna taaki Gateway/Frontend ise read kar sake
+  
+      
+      const lockPayload = JSON.stringify({
+        token: reservationToken,
+        lockedPrice: finalSurgePrice
+      });
+  
+      const isReserved = await redis.set(locked, lockPayload, 'EX', HOLD_TIME_SECONDS, 'NX');
+  
+      if (!isReserved) {
+        await redis.incr(`product:${productId}:stock`)
+        throw new BadRequestException('You already have an active checkout session. Please finish your payment.');
+      }
+  
+  
       await redis.set(`product:${productId}:current_price`, finalSurgePrice.toString());
       
       this.logger.log(`📈 Price Engine updated product ${productId} to ₹${finalSurgePrice} (Sales: ${salesPercentage.toFixed(2)}%)`);
-      
-      return { productId, salesPercentage, finalSurgePrice };
+  
+      const orderServiceQueueData: OrderServiceData = {
+        productId: payload.productId,
+        userId: payload.userId,
+        purchasedPrice: payload.purchasedPrice, 
+        queueId: payload.queueId,
+        timestamp: payload.timestamp,
+        reservationToken: reservationToken,
+        expiresAt: HOLD_TIME_SECONDS,
+      };
+  
+      await this.rabbitMqService.publishToOrderExchange(orderServiceQueueData);
+  
+      return { productId, salesPercentage, finalSurgePrice, reservationToken };
     } catch (error) {
-      this.logger.error(`🔴 Dynamic Pricing Engine Error: ${error.message}`);
+      this.logger.error(`🔴 Dynamic Pricing Engine Error: ${error}`);
       throw error;
     }
   }
@@ -91,7 +138,7 @@ export class ProductService {
         }
       };
     } catch (error) {
-      console.error(`🔴 Failed to start flash sale: ${error.message}`);
+      console.error(`🔴 Failed to start flash sale: ${error}`);
       return { success: false, message: 'Internal Server Error while starting sale' };
     }
   }

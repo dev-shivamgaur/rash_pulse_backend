@@ -6,32 +6,51 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy, type StrategyOptions } from 'passport-jwt';
+import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtPayload } from '../types/jwt-payload.type';
 import { Request } from 'express';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(
-    Strategy,
-    'jwt'
-) {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(private readonly configService: ConfigService) {
-    // 1. Yeh log check karne ke liye hai ki strategy nestjs mein register hui ya nahi
     console.log('✅ JwtStrategy Initialized Successfully!');
 
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
+        // 1. First priority: Cookie se token extract karo
         (req: Request) => {
-          const token = req?.cookies?.accessToken;
-          console.log('=== EXTRACTING TOKEN FROM COOKIE ===', token ? 'Token Found' : 'No Token');
+          let token: string | null = null;
+          
+          // Cookie-parser middleware se parsed cookies
+          if (req?.cookies && req.cookies['accessToken']) {
+            token = req.cookies['accessToken'];
+          } 
+          // Fallback: Agar cookie-parser nahi chala, toh raw header string parse karo
+          else if (req?.headers?.cookie) {
+            const rawCookie = req.headers.cookie
+              .split(';')
+              .find((c) => c.trim().startsWith('accessToken='));
+            if (rawCookie) {
+              token = rawCookie.split('=')[1];
+            }
+          }
+
+          console.log(
+            '=== EXTRACTING TOKEN FROM COOKIE ===',
+            token ? 'Token Found' : 'No Token Found'
+          );
           return token;
-        }
+        },
+
+        // 2. Second priority: Bearer token in Authorization header
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
+
       ignoreExpiration: false,
-      // 2. Fat arrow function (=>) context sahi rakhta hai
+      
+      // Dynamic Secret Key Provider
       secretOrKeyProvider: (request: any, rawJwtToken: any, done: any) => {
         try {
-          console.log('=== PROVIDING SECRET KEY ===');
           const secret = this.configService.getOrThrow<string>('JWT_ACCESS_SECRET');
           done(null, secret);
         } catch (error) {
@@ -44,13 +63,12 @@ export class JwtStrategy extends PassportStrategy(
 
   async validate(payload: JwtPayload) {
     console.log('=== VALIDATING PAYLOAD ===', payload);
-    
-    // 3. Agar payload nahi hai, tab error throw karo
+
     if (!payload) {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException('Invalid token payload');
     }
 
-    // 4. Sahi hone par payload return karo (yeh req.user mein save hoga)
+    // Yeh payload automatically req.user mein assign ho jayega
     return payload;
   }
 }

@@ -10,7 +10,7 @@ export const RabbitMQConfig = {
   
       queue: 'flash_sale_queue',
   
-      routingKey: '',
+      routingKey: 'product_lock',
   
     },
   

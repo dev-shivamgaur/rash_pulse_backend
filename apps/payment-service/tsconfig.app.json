@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "outDir": "../../dist/apps/payment-service",
+    "baseUrl": "../../",
+    "paths": {
+      "@rash-pulse/swagger": ["libs/swagger/src"],
+      "@rash-pulse/swagger/*": ["libs/swagger/src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+}

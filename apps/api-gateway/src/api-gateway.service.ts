@@ -25,7 +25,7 @@ export class ApiGatewayService {
   async bookTicket(params: {
     productId: string;
     userId: string;
-  }): Promise<BookTicketReturnData> {
+  }){
     const redis = this.redisService.getClient();
     const productId = params.productId;
     const userId = params.userId;
@@ -74,7 +74,7 @@ export class ApiGatewayService {
     };
 
     // 3. RabbitMQ Exchange mein natively publish kar diya
-    await this.rabbitMQService.publishToExchange(
+    const res = await this.rabbitMQService.publishToExchange(
       RabbitMQConfig.flashSale.exchange,
       RabbitMQConfig.flashSale.routingKey,
       payload
@@ -82,6 +82,7 @@ export class ApiGatewayService {
 
     // 🏁 User ko bina delay ke instant response bhej diya (Peeche worker DB entry karta rahega)
     return {
+      res: res,
       success: true,
       status: 'IN_WAITING_ROOM',
       message: 'Request accepted successfully. Your order is being processed in the queue!',

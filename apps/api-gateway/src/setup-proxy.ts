@@ -47,6 +47,10 @@ export function setupGatewayProxies(
       createProxyMiddleware({
         target,
         changeOrigin: true,
+        pathRewrite: {
+          // Rule: Gateway prefix '/api/v1/payments' ko poora DELETE (remove) kar do
+          [`^${route.gatewayPrefix}`]: '',
+        },
       }),
     );
   }
