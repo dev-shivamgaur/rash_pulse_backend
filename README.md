@@ -1,17 +1,17 @@
-# RashPulse Backend API
+# RashPulse Backend
 
 <div align="center">
 
-![NestJS](https://img.shields.io/badge/NestJS-EA2845?style=for-the-badge&logo=nestjs&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
-![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![NestJS](https://img.shields.io/badge/NestJS-11-EA2845?style=for-the-badge&logo=nestjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Prisma-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-ioredis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![RabbitMQ](https://img.shields.io/badge/RabbitMQ-AMQP-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-A modern, scalable healthcare backend API built with **NestJS**, featuring enterprise-grade architecture, secure authentication, caching, message queuing, and microservices support.
+**High-throughput flash-sale backend** built as a NestJS microservices monorepo — API Gateway, OTP auth, Redis inventory locks, RabbitMQ order pipeline, and payments.
 
-[Features](#features) • [Tech Stack](#tech-stack) • [Getting Started](#getting-started) • [API Documentation](#api-documentation) • [Architecture](#architecture)
+[Architecture](#architecture) · [Services](#services) · [Getting Started](#getting-started) · [API Docs](#api-documentation) · [Scripts](#npm-scripts)
 
 </div>
 
@@ -19,565 +19,411 @@ A modern, scalable healthcare backend API built with **NestJS**, featuring enter
 
 ## Overview
 
-RashPulse is a modern healthcare backend API designed to provide secure, scalable, and reliable services for healthcare applications. Built with industry best practices, it leverages cutting-edge technologies to ensure performance, security, and maintainability.
+RashPulse is designed for **flash-sale / high-concurrency checkout** scenarios where stock must stay consistent under heavy load.
 
-The project utilizes a **monorepo structure** to organize multiple microservices and shared libraries, making it easy to scale and maintain as the healthcare system grows.
+Clients talk only to the **API Gateway**. Downstream services own their own PostgreSQL databases, share JWT verification via `libs/jwt-shared`, and coordinate through **Redis** (live stock, reservations, OTP) and **RabbitMQ** (async order & payment events).
 
----
-
-## ✨ Features
-
-### 🔐 Authentication & Security
-- **JWT-based Authentication** - Secure token-based user authentication
-- **Role-Based Access Control (RBAC)** - Fine-grained permission management
-- **Secure Password Hashing** - Industry-standard bcrypt encryption
-- **Token Refresh Mechanism** - Automatic token renewal for improved security
-- **OAuth 2.0 Ready** - Architecture supports third-party authentication providers
-
-### ⚡ Performance & Caching
-- **Redis Caching** - In-memory data caching for lightning-fast responses
-- **Cache Invalidation Strategies** - Automatic cache management
-- **Rate Limiting** - Protect APIs from abuse
-- **Query Optimization** - Efficient database queries with Prisma
-
-### 📨 Message Queuing & Async Processing
-- **RabbitMQ Integration** - Robust message broker for asynchronous operations
-- **Event-Driven Architecture** - Publish-subscribe pattern support
-- **Background Job Processing** - Handle long-running tasks asynchronously
-- **Message Retry Logic** - Ensure reliable message delivery
-- **Dead Letter Queues** - Handle failed messages gracefully
-
-### 🏗️ Microservices Architecture
-- **Monorepo Structure** - Organize multiple services in a single repository
-- **Shared Libraries** - Reusable code across microservices
-- **Inter-Service Communication** - RabbitMQ-based service-to-service messaging
-- **Independent Scaling** - Each microservice can scale independently
-- **Service Discovery Ready** - Architecture supports service discovery patterns
-
-### 📊 Data Management
-- **Prisma ORM** - Type-safe database access with auto-generated types
-- **Database Migrations** - Version-controlled schema changes
-- **Seeding Support** - Initialize database with sample data
-- **Multi-Database Support** - Works with PostgreSQL, MySQL, and other databases
-- **Transaction Support** - ACID compliance for critical operations
-
-### 🧪 Testing & Quality
-- **Unit Testing** - Comprehensive test coverage with Jest
-- **E2E Testing** - End-to-end testing framework
-- **Test Coverage Reports** - Monitor code coverage metrics
-- **Load Testing** - Performance testing with built-in load test scripts
-
-### 📝 API Documentation
-- **Swagger/OpenAPI Integration** - Auto-generated API documentation
-- **API Endpoints Catalog** - Discover and explore all available endpoints
-- **Request/Response Examples** - Clear examples for each endpoint
-- **Reusable Swagger Configuration** - Centralized documentation setup
-
-### 🔧 Developer Experience
-- **Hot Module Reloading** - Instant code reload during development
-- **ESLint Configuration** - Code quality and style enforcement
-- **Prettier Integration** - Automatic code formatting
-- **TypeScript Support** - Full type safety across the codebase
-- **Monorepo Tooling** - Nx or similar monorepo management tools
-
-### 🚀 Deployment & DevOps
-- **Docker Support** - Container-based deployment
-- **Docker Compose** - Multi-container orchestration for local development
-- **Environment Configuration** - Flexible configuration management
-- **Production-Ready** - Optimized builds for production deployment
-- **Health Checks** - Service health monitoring endpoints
+```
+Client / Swagger
+       │
+       ▼
+┌──────────────────┐
+│   API Gateway    │  :8000   proxies + flash-sale booking
+│  /api/v1/*       │
+└────────┬─────────┘
+         │  HTTP proxy
+    ┌────┼────┬─────────┬──────────┐
+    ▼    ▼    ▼         ▼          ▼
+  Auth Order Product Payment Notification
+  :5001 :5002 :5003    :5004      :5005
+    │      │     │        │
+    └──────┴─────┴────────┘
+         Redis + RabbitMQ + PostgreSQL (per service)
+```
 
 ---
 
-## 🛠️ Tech Stack
+## Features
+
+| Area | What it does |
+|------|----------------|
+| **Flash sale booking** | Gateway accepts book requests; Product service reserves stock in Redis with TTL locks and surge pricing |
+| **Event-driven orders** | Reservation events publish over RabbitMQ; Order service consumes and persists orders |
+| **OTP authentication** | Phone-number OTP login, device fingerprinting, httpOnly access/refresh cookies |
+| **JWT + RBAC** | Shared JWT guards/roles (`user` / `admin`) across gateway and services |
+| **Payments** | Initiate / verify flow with payment records in Prisma and payment events on RabbitMQ |
+| **Unified Swagger** | Gateway hosts a multi-service docs UI; each service also exposes `/docs` and `/docs-json` |
+| **Independent data stores** | Separate PostgreSQL databases per domain service |
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| **Framework** | NestJS 10+ |
-| **Language** | TypeScript 5+ |
-| **Database** | PostgreSQL / MySQL (Prisma ORM) |
-| **Caching** | Redis |
-| **Message Broker** | RabbitMQ |
-| **Authentication** | JWT (jsonwebtoken) |
-| **API Documentation** | Swagger/OpenAPI |
-| **Testing** | Jest, Supertest |
-| **Code Quality** | ESLint, Prettier |
-| **Containerization** | Docker & Docker Compose |
-| **Package Manager** | npm |
+|-------|------------|
+| Runtime / Framework | Node.js 18+, NestJS 11 (monorepo via Nest CLI) |
+| Language | TypeScript 5 |
+| Databases | PostgreSQL + Prisma 7 (per-service schemas) |
+| Cache / locks | Redis (`ioredis`) |
+| Messaging | RabbitMQ (`amqplib` / `amqp-connection-manager`) |
+| Auth | JWT (`@nestjs/jwt`, Passport), cookie-parser |
+| Gateway | `http-proxy-middleware` reverse proxy |
+| Docs | `@nestjs/swagger` + shared `@rash-pulse/swagger` lib |
+| Load testing | `autocannon` (`load-test.js`) |
+| Infra (local) | Docker Compose (RabbitMQ management) |
 
 ---
 
-## 📋 Prerequisites
+## Services
 
-Before you begin, ensure you have the following installed:
+| Service | Default port | Gateway route | Responsibility |
+|---------|--------------|---------------|----------------|
+| **api-gateway** | `8000` | `/api/v1/flash-sale` | Entry point, proxying, flash-sale `book` |
+| **auth-service** | `5001` | `/api/v1/auth` | OTP request/verify, refresh tokens, users |
+| **order-service** | `5002` | `/api/v1/orders` | Order persistence, status, details |
+| **product-service** | `5003` | `/api/v1/products` | Flash-sale start, live stock/price in Redis |
+| **payment-service** | `5004` | `/api/v1/payments` | Payment initiate / verify / records |
+| **notification-service** | `5005` | `/api/v1/notifications` | Notifications (scaffold) |
 
-- **Node.js** v18.0.0 or higher
-- **npm** v9.0.0 or higher
-- **Docker** v20.10+ (for containerized development)
-- **Docker Compose** v2.0+ (optional, for multi-container setup)
-- **PostgreSQL** v12+ or **MySQL** v8+ (if not using Docker)
-- **Redis** v6+ (if not using Docker)
-- **RabbitMQ** v3.8+ (if not using Docker)
+### Shared libraries
+
+| Library | Path | Purpose |
+|---------|------|---------|
+| `@rash-pulse/swagger` | `libs/swagger` | Microservice + gateway Swagger helpers |
+| `jwt-shared` | `libs/jwt-shared` | JWT strategy, guards, roles, decorators |
 
 ---
 
-## 🚀 Getting Started
+## Flash-sale flow (happy path)
 
-### 1. Clone the Repository
+1. **Admin** starts a sale → `POST /api/v1/products/products/start` (JWT + `admin` role) — Product service loads stock/price into Redis.
+2. **User** books → `POST /api/v1/flash-sale/book` on the gateway (JWT) — reservation token + stock lock in Redis.
+3. Product service publishes `reservation_created` on the flash-sale RabbitMQ exchange.
+4. **Order service** consumes the event, creates an order (`PENDING_PAYMENT`), tracks reservation / queue IDs.
+5. **User** pays → Payment service `initiate` / `verify`; payment success/failure events update order state (including refunds).
+
+---
+
+## Prerequisites
+
+- **Node.js** ≥ 18 and **npm** ≥ 9
+- **PostgreSQL** ≥ 14 (local or remote) — create databases such as:
+  - `rashpulse_auth`
+  - `rashpulse_orders`
+  - `rashpulse_products`
+  - `rashpulse_payments`
+- **Redis** ≥ 6 (`redis://localhost:6379`)
+- **RabbitMQ** ≥ 3 (or use Docker Compose below)
+- **Docker** + **Docker Compose** (recommended for RabbitMQ)
+
+---
+
+## Getting Started
+
+### 1. Clone & install
 
 ```bash
 git clone https://github.com/dev-shivamgaur/rash_pulse_backend.git
 cd rash_pulse_backend
-```
-
-### 2. Install Dependencies
-
-```bash
 npm install
 ```
 
-### 3. Environment Configuration
+### 2. Start RabbitMQ
 
-Create a `.env` file in the root directory:
+```bash
+docker compose up -d
+```
+
+- AMQP: `amqp://localhost:5672`
+- Management UI: [http://localhost:15672](http://localhost:15672) (default guest/guest)
+
+Ensure **Redis** and **PostgreSQL** are running on your machine (or point env vars to remote instances).
+
+### 3. Configure environment
+
+Each app has its own `.env` under `apps/<service>/`. Copy from `.env.example` where available and set at least:
+
+**Root (JWT secrets used across services):**
 
 ```env
-# Application
-NODE_ENV=development
-APP_PORT=3000
-APP_HOST=localhost
-
-# Database
-DATABASE_URL=
-# Or for MySQL:
-# DATABASE_URL=
-
-# Redis
-REDIS_HOST=
-REDIS_PORT=
-REDIS_PASSWORD=
-
-# RabbitMQ
-RABBITMQ_URL=
-
-# JWT
-JWT_SECRET=
-JWT_EXPIRATION=
-
-# CORS
-CORS_ORIGIN=h
-
-# Log Level
-LOG_LEVEL=
+JWT_ACCESS_SECRET=change-me-access
+JWT_REFRESH_SECRET=change-me-refresh
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=30d
 ```
 
-### 4. Database Setup
+**Per service (examples):**
 
-#### Option A: Using Docker Compose (Recommended)
+```env
+# apps/api-gateway/.env
+PORT=8000
+AUTH_SERVICE_URL=http://localhost:5001
+ORDER_SERVICE_URL=http://localhost:5002
+PRODUCT_SERVICE_URL=http://localhost:5003
+PAYMENT_SERVICE_URL=http://localhost:5004
+NOTIFICATION_SERVICE_URL=http://localhost:5005
+REDIS_URL=redis://localhost:6379
+SWAGGER_ENABLED=true
+
+# apps/auth-service/.env
+PORT=5001
+DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/rashpulse_auth?schema=public
+REDIS_URL=redis://localhost:6379
+CORS_ORIGIN=http://localhost:8000
+
+# apps/order-service/.env
+PORT=5002
+DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/rashpulse_orders?schema=public
+REDIS_URL=redis://localhost:6379
+
+# apps/product-service/.env
+PORT=5003
+DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/rashpulse_products?schema=public
+REDIS_URL=redis://localhost:6379
+
+# apps/payment-service/.env
+PORT=5004
+DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/rashpulse_payments?schema=public
+REDIS_URL=redis://localhost:6379
+
+# apps/notification-service/.env
+PORT=5005
+CORS_ORIGIN=http://localhost:8000
+```
+
+> Never commit real secrets. Keep production secrets in a vault / CI secrets store.
+
+### 4. Database migrations
+
+From each Prisma-backed service directory (or with the correct schema path):
 
 ```bash
-docker-compose up -d
+# Auth
+npx prisma migrate dev --schema=apps/auth-service/prisma/schema.prisma
+
+# Products
+npx prisma migrate dev --schema=apps/product-service/prisma/schema.prisma
+
+# Orders
+npx prisma migrate dev --schema=apps/order-service/prisma/schema.prisma
+
+# Payments
+npx prisma migrate dev --schema=apps/payment-service/prisma/schema.prisma
 ```
 
-This will start:
-- PostgreSQL database
-- Redis cache
-- RabbitMQ message broker
+Generate clients if needed after schema changes (each service uses `generated/prisma` output).
 
-#### Option B: Manual Setup
+### 5. Run services
 
-If you prefer to set up services manually, install PostgreSQL, Redis, and RabbitMQ on your system.
-
-### 5. Initialize Database
-
-Run Prisma migrations:
+**All services (recommended for local full stack):**
 
 ```bash
-npx prisma migrate dev --name init
+npm run start:all
 ```
 
-Seed the database with sample data:
+**Individually:**
 
 ```bash
-npm run seed
+npm run start:gateway
+npm run start:auth
+npm run start:order
+npm run start:product
+npm run start:payment
+npm run start:notification
 ```
 
-### 6. Start the Application
-
-#### Development Mode (with hot reload)
+**Gateway only (default `start:dev`):**
 
 ```bash
 npm run start:dev
 ```
 
-The API will be available at `http://localhost:3000`
+Once up:
 
-#### Production Mode
+| Resource | URL |
+|----------|-----|
+| API Gateway | http://localhost:8000 |
+| Unified Swagger | http://localhost:8000/api/v1/docs |
+| Auth (direct) | http://localhost:5001/docs |
+| Orders (direct) | http://localhost:5002/docs |
+| Products (direct) | http://localhost:5003/docs |
+| Payments (direct) | http://localhost:5004/docs |
+| Notifications (direct) | http://localhost:5005/docs |
+
+---
+
+## API Documentation
+
+### Gateway (recommended)
+
+Open **[http://localhost:8000/api/v1/docs](http://localhost:8000/api/v1/docs)** and pick a service from the dropdown. “Try it out” requests go through the gateway prefixes.
+
+### Key endpoints (via gateway)
+
+#### Auth — `/api/v1/auth`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Health check |
+| `POST` | `/request-otp` | Send OTP to phone number |
+| `POST` | `/verify-otp` | Verify OTP; sets `accessToken` / `refreshToken` cookies |
+| `POST` | `/refresh` | Issue new access token from refresh cookie |
+| `GET` | `/allusers` | List users (protected / role-gated) |
+
+#### Flash sale — `/api/v1/flash-sale`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Gateway health |
+| `POST` | `/book` | Book flash-sale item (JWT) |
+
+#### Products — `/api/v1/products`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/products/health` | Health check |
+| `POST` | `/products/start` | Admin: start flash sale (JWT + admin) |
+| `GET` | `/products/sale-info/:prid` | Live Redis price/stock (JWT + admin) |
+
+#### Orders — `/api/v1/orders`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Health check |
+| `GET` | `/status/:trackingId` | Order status by tracking/queue id (JWT) |
+| `GET` | `/get-order/:id` | Order details for current user (JWT) |
+
+#### Payments — `/api/v1/payments`
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/initiate` | Start payment for an order (JWT) |
+| `POST` | `/verify` | Verify payment (JWT) |
+| `POST` | `/create` | Create payment record (utility / dummy entry) |
+
+Exact request bodies are documented in Swagger DTOs.
+
+---
+
+## Project Structure
+
+```
+rash-pulse-backend/
+├── apps/
+│   ├── api-gateway/          # Reverse proxy + flash-sale book API
+│   ├── auth-service/         # OTP auth, devices, refresh tokens (Prisma)
+│   ├── order-service/        # Orders + RabbitMQ consumers (Prisma)
+│   ├── product-service/      # Catalog + Redis flash-sale inventory (Prisma)
+│   ├── payment-service/      # Payments + payment events (Prisma)
+│   └── notification-service/ # Notification service
+├── libs/
+│   ├── swagger/              # Shared Swagger setup (@rash-pulse/swagger)
+│   └── jwt-shared/           # Shared JWT module, guards, roles
+├── docker-compose.yml        # RabbitMQ (+ management UI)
+├── load-test.js              # Autocannon load test for /flash-sale/book
+├── nest-cli.json             # Monorepo project definitions
+├── webpack.config.js
+└── package.json
+```
+
+---
+
+## npm Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run start:all` | Watch-mode all six apps via `concurrently` |
+| `npm run start:gateway` | API Gateway (watch) |
+| `npm run start:auth` | Auth service (watch) |
+| `npm run start:order` | Order service (watch) |
+| `npm run start:product` | Product service (watch) |
+| `npm run start:payment` | Payment service (watch) |
+| `npm run start:notification` | Notification service (watch) |
+| `npm run start:dev` | Gateway only (watch) |
+| `npm run build` | Build all applications |
+| `npm run start:prod` | Run built gateway |
+| `npm run start:prod:*` | Run built auth / product / order / payment / notification |
+| `npm run lint` | ESLint with auto-fix |
+| `npm run format` | Prettier on `apps/**` and `libs/**` |
+| `npm run test` | Jest unit tests |
+| `npm run test:cov` | Coverage report |
+
+Production entry examples:
 
 ```bash
 npm run build
 npm run start:prod
-```
-
-#### Watch Mode (rebuild on file changes)
-
-```bash
-npm run start
+npm run start:prod:auth
+# ...
 ```
 
 ---
 
-## 📚 API Documentation
+## Load Testing
 
-### Swagger Documentation
-
-Once the application is running, access the Swagger UI at:
-
-```
-http://localhost:3000/api/docs
-```
-
-### API Endpoints Overview
-
-#### Authentication
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - User login
-- `POST /api/auth/refresh` - Refresh JWT token
-- `POST /api/auth/logout` - User logout
-
-#### User Management
-- `GET /api/users` - Get all users
-- `GET /api/users/:id` - Get user by ID
-- `PATCH /api/users/:id` - Update user profile
-- `DELETE /api/users/:id` - Delete user account
-
-#### Healthcare Services (Example)
-- `GET /api/appointments` - Get all appointments
-- `POST /api/appointments` - Create new appointment
-- `GET /api/appointments/:id` - Get appointment details
-- `PATCH /api/appointments/:id` - Update appointment
-- `DELETE /api/appointments/:id` - Cancel appointment
-
-#### Health Monitoring
-- `GET /api/health` - Service health check
-- `GET /api/health/database` - Database connection status
-- `GET /api/health/redis` - Redis connection status
-
----
-
-## 🧪 Testing
-
-### Run Unit Tests
-
-```bash
-npm run test
-```
-
-### Run E2E Tests
-
-```bash
-npm run test:e2e
-```
-
-### Generate Test Coverage Report
-
-```bash
-npm run test:cov
-```
-
-Coverage report will be available in `coverage/` directory.
-
----
-
-## 📊 Load Testing
-
-RashPulse includes a built-in load testing script to evaluate API performance.
-
-### Run Load Test
-
-```bash
-npm run load-test
-```
-
-Or manually:
+`load-test.js` hammers the flash-sale book endpoint with **autocannon** (high concurrency).
 
 ```bash
 node load-test.js
 ```
 
-The load test will:
-- Make concurrent requests to specified endpoints
-- Measure response times
-- Generate performance metrics
-- Report any errors or bottlenecks
+Adjust `url`, `connections`, `duration`, and body `productId` in `load-test.js` to match a live sale you started via Product service.
 
-### Configure Load Test
-
-Edit `load-test.js` to customize:
-- Number of concurrent users
-- Request duration
-- Endpoint URLs
-- Request payloads
+> Auth is required in normal flow; configure headers/cookies in the script if you load-test a protected route.
 
 ---
 
-## 🏗️ Project Structure
+## Architecture notes
 
-```
-rash_pulse_backend/
-├── apps/                           # Microservices
-│   ├── api-gateway/               # API Gateway service
-│   ├── auth-service/              # User management service
-│   ├── order-service/             # Order Service management
-│   └── product-service/           # Product  service
-│
-├── libs/                           # Shared libraries
-│   ├── swagger/                   # Swagger configuration
-│   ├── common/                    # Common utilities
-│   └── database/                  # Database configuration
-│
-├── prisma/                        # Prisma ORM
-│   ├── schema.prisma             # Database schema
-│   └── migrations/               # Database migrations
-│
-├── src/                          # Main application
-│   ├── modules/                  # Feature modules
-│   ├── guards/                   # Route guards
-│   ├── interceptors/             # Request/response interceptors
-│   ├── filters/                  # Exception filters
-│   ├── pipes/                    # Data transformation pipes
-│   └── main.ts                   # Application entry point
-│
-├── test/                         # Test files
-│   ├── unit/                    # Unit tests
-│   └── e2e/                     # End-to-end tests
-│
-├── docker-compose.yml           # Docker Compose configuration
-├── .env.example                 # Environment variables template
-├── package.json                 # Project dependencies
-├── tsconfig.json               # TypeScript configuration
-├── eslint.config.mjs           # ESLint configuration
-├── webpack.config.js           # Webpack configuration
-└── README.md                   # This file
-```
+- **Database-per-service** — Auth, Products, Orders, and Payments each have their own Prisma schema and `DATABASE_URL`.
+- **Redis** — Live stock counters, reservation locks (`NX` + TTL), surge price keys, OTP storage.
+- **RabbitMQ** — Flash-sale exchange / `reservation_created` routing; payment success/failure publishing for order updates.
+- **Gateway proxy** — Strips `/api/v1/<service>` and forwards to the internal service URL; also proxies `/docs-json` for aggregated Swagger.
+- **Cookies** — Access + refresh tokens set as httpOnly cookies on OTP verify; CORS uses credentials against the gateway origin.
 
 ---
 
-## 🔄 Workflow & Best Practices
+## Security checklist
 
-### Development Workflow
-
-1. **Create Feature Branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Write Code & Tests**
-   - Implement feature in relevant module
-   - Write unit tests
-   - Ensure code passes linting
-
-3. **Format & Lint**
-   ```bash
-   npm run lint
-   npm run format
-   ```
-
-4. **Run Tests Locally**
-   ```bash
-   npm run test
-   ```
-
-5. **Commit & Push**
-   ```bash
-   git add .
-   git commit -m "feat: your feature description"
-   git push origin feature/your-feature-name
-   ```
-
-### Code Quality Standards
-
-- **Type Safety**: Always use TypeScript types
-- **Error Handling**: Implement proper exception handling
-- **Documentation**: Add JSDoc comments for complex functions
-- **Testing**: Aim for >80% code coverage
-- **Security**: Follow OWASP guidelines
+- [ ] Rotate `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` for every environment
+- [ ] Use strong DB passwords; never commit `.env`
+- [ ] Enable HTTPS and `secure` cookies in production
+- [ ] Restrict `CORS_ORIGIN` to real frontend origins
+- [ ] Protect RabbitMQ and Redis with auth in non-local environments
+- [ ] Keep flash-sale admin endpoints behind `admin` role only
 
 ---
 
-## 🔒 Security Best Practices
+## Troubleshooting
 
-### Implemented Security Measures
-
-- **JWT Authentication** - Secure token-based auth
-- **Password Hashing** - bcrypt with salt rounds
-- **Rate Limiting** - Prevent brute force attacks
-- **CORS Configuration** - Controlled cross-origin access
-- **Environment Variables** - Sensitive data in .env
-- **SQL Injection Prevention** - Prisma ORM parameterized queries
-- **XSS Protection** - Helmet.js middleware
-
-### Security Checklist
-
-- [ ] Change JWT_SECRET in production
-- [ ] Enable HTTPS in production
-- [ ] Configure CORS for production domains
-- [ ] Use strong database passwords
-- [ ] Enable Redis password authentication
-- [ ] Configure RabbitMQ security
-- [ ] Regular security audits
-- [ ] Keep dependencies updated
+| Symptom | Likely fix |
+|---------|------------|
+| `ECONNREFUSED` on Postgres | Check `DATABASE_URL` and that the DB exists |
+| Redis connection errors | Start Redis; verify `REDIS_URL` |
+| RabbitMQ connection errors | `docker compose up -d`; verify `amqp://localhost:5672` |
+| Gateway 502 / proxy errors | Start the target microservice; match ports in gateway `.env` |
+| Swagger empty for a service | Ensure that service is running and `SWAGGER_ENABLED=true` |
+| Port already in use | Change `PORT` in the service `.env` or free the port |
 
 ---
 
-## 📦 Docker Deployment
+## Contributing
 
-### Build Docker Image
-
-```bash
-docker build -t rash-pulse-backend:latest .
-```
-
-### Run with Docker Compose
-
-```bash
-docker-compose up -d
-```
-
-### View Logs
-
-```bash
-docker-compose logs -f api
-```
-
-### Stop Services
-
-```bash
-docker-compose down
-```
+1. Create a feature branch from `main`
+2. Keep changes scoped to the relevant service / shared lib
+3. Run `npm run lint` and relevant tests before opening a PR
+4. Document new env vars and endpoints in this README / Swagger
 
 ---
 
-## 🐛 Troubleshooting
+## License
 
-### Database Connection Error
-
-```
-Error: connect ECONNREFUSED
-```
-
-**Solution**: Ensure PostgreSQL/MySQL is running and DATABASE_URL is correct.
-
-### Redis Connection Error
-
-```
-Error: Redis connection refused
-```
-
-**Solution**: Start Redis or update REDIS_HOST and REDIS_PORT.
-
-### RabbitMQ Connection Error
-
-```
-Error: connect ECONNREFUSED on amqp://
-```
-
-**Solution**: Start RabbitMQ or update RABBITMQ_URL.
-
-### Port Already in Use
-
-```bash
-# Find process using port 3000
-lsof -i :3000
-
-# Kill the process
-kill -9 <PID>
-```
-
-### Clear Node Modules Cache
-
-```bash
-npm cache clean --force
-rm -rf node_modules package-lock.json
-npm install
-```
+Private / **UNLICENSED** (see `package.json`). Contact the maintainer for usage rights.
 
 ---
 
-## 📈 Performance Optimization
+## Author
 
-### Tips for Better Performance
+**Shivam Gaur** — [GitHub](https://github.com/dev-shivamgaur)
 
-1. **Redis Caching**
-   - Cache frequently accessed data
-   - Set appropriate TTL values
-   - Monitor cache hit rates
-
-2. **Database Optimization**
-   - Create indexes on frequently queried columns
-   - Use pagination for large datasets
-   - Optimize N+1 queries
-
-3. **Async Processing**
-   - Use RabbitMQ for heavy operations
-   - Process emails/notifications asynchronously
-   - Implement background job scheduling
-
-4. **API Rate Limiting**
-   - Protect endpoints from abuse
-   - Implement per-user limits
-   - Use tiered rate limiting
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-1. **Fork the Repository**
-2. **Create a Feature Branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit Changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to Branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
-
-### Contribution Guidelines
-
-- Follow the code style defined by ESLint
-- Write tests for new features
-- Update documentation
-- Ensure all tests pass
-- Get code reviewed
-
----
-
-## 📋 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 📞 Support & Contact
-
-For support, documentation, and inquiries:
-
-- **Issues** - [GitHub Issues](https://github.com/dev-shivamgaur/rash_pulse_backend/issues)
-- **Discussions** - [GitHub Discussions](https://github.com/dev-shivamgaur/rash_pulse_backend/discussions)
-
----
-
-## 🙏 Acknowledgments
-
-- [NestJS](https://nestjs.com/) - Progressive Node.js framework
-- [Prisma](https://www.prisma.io/) - Next-gen ORM
-- [Redis](https://redis.io/) - In-memory data store
-- [RabbitMQ](https://www.rabbitmq.com/) - Message broker
-- [Docker](https://www.docker.com/) - Containerization platform
-
----
-
-<div align="center">
-
-**Made with ❤️ by Shivam Gaur**
-
-⭐ If this project helps you, please consider giving it a star! ⭐
-
-</div>
+Issues: [github.com/dev-shivamgaur/rash_pulse_backend/issues](https://github.com/dev-shivamgaur/rash_pulse_backend/issues)
