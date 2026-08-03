@@ -132,18 +132,25 @@ async saveOrderToDatabase(payload: orderQueueData) {
 
 
   async getOrderDetails(user:JwtPayload, orderId: string){
-
-    const order = await this.prisma.order.findUnique({
-      where: {
-        id: orderId,
-      }
-    });
-
-    return order;
+    
+   try {
+     const order = await this.prisma.order.findUnique({
+       where: {
+         id: orderId,
+       }
+     });
+ 
+     return order;
+   } catch (error) {
+    console.log(error);
+    throw error;
+    
+   }
   }
 
   async savePaymentSuccess(payload: PaymentEventDataInterface) {
     try {
+      console.log(payload);
       if (!payload || !payload.orderId) {
         console.error('❌ Invalid payload received in savePaymentSuccess');
         return; 
@@ -186,14 +193,12 @@ async saveOrderToDatabase(payload: orderQueueData) {
   async savePaymentFailed(payload: PaymentEventDataInterface): Promise<void> {
     const { orderId, message } = payload || {};
 
-    // 1. Basic Payload Guard
     if (!orderId) {
-      console.error('❌ Missing orderId in savePaymentFailed payload');
+      console.error(' Missing orderId in savePaymentFailed payload');
       return; 
     }
 
     try {
-      // 2. Fetch Existing Order
       const existingOrder = await this.prisma.order.findUnique({
         where: { id: orderId },
         select: { id: true, status: true },
@@ -201,11 +206,9 @@ async saveOrderToDatabase(payload: orderQueueData) {
 
       if (!existingOrder) {
         console.error(`⚠️ Order not found for ID: ${orderId}`);
-        // Business Error: Invalid message payload data, do not requeue blindly
         return; 
       }
 
-      // 3. Race Condition Guard: Never overwrite a PAID order
       if (existingOrder.status === OrderStatus.PAID) {
         console.warn(
           ` Ignored FAILED event for Order ${orderId}. Current status is already PAID.`,
@@ -228,9 +231,6 @@ async saveOrderToDatabase(payload: orderQueueData) {
         where: { id: orderId },
         data: {
           status: OrderStatus.CANCELLED,
-          // DB Audit Fields (Agar Schema mein available hain):
-          // cancelReason: failureReason || 'Payment failed at gateway',
-          // updatedAt: new Date(),
         },
       });
 
@@ -241,11 +241,11 @@ async saveOrderToDatabase(payload: orderQueueData) {
       );
     } catch (error) {
       console.error(
-        `❌ Failed to update order payment status to FAILED for Order ID: ${orderId}`,
+        ` Failed to update order payment status to FAILED for Order ID: ${orderId}`,
         error instanceof Error ? error.stack : error,
       );
       
-      // Re-throw so RabbitMQ channel can NACK/Re-queue based on consumer retry policy
+      
       throw error;
     }
   }

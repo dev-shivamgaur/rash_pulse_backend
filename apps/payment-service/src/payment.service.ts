@@ -235,22 +235,17 @@ try {
   
   
       await this.rabbitMQ.publishPaymentEvent(this.ROUTING_KEY_SUCCESS, {
-        orderId: payment.orderId,
-        paymentId: payment.id,
-        paymentProvidedRef: payment.providerPaymentRef,
-        paymentProvidedIntend: payment.providerIntentId,
-        paymentProvider: payment.provider,
-        paymentStatus: payment.status,
-        amount: payment.amount,
-        message : 'Payment Confirmed!'
+        orderId: updatedPayment.orderId,
+        paymentId: updatedPayment.id,
+        paymentProvidedRef: updatedPayment.providerPaymentRef,
+        paymentProvidedIntend: updatedPayment.providerIntentId,
+        paymentProvider: updatedPayment.provider,
+        paymentStatus: updatedPayment.status,
+        amount: updatedPayment.amount,
+        message : 'Payment Confirmed!',
       });
   
-      // 4. Order Microservice Status Update Call
-      // await this.updateOrderStatusInOrderService(
-      //   payment.orderId,
-      //   OrderStatus.PAID,
-      //   ctx.accessToken,
-      // );
+
   
       return {
         success: true,
@@ -298,11 +293,6 @@ try {
           },
         });
 
-        // await this.updateOrderStatusInOrderService(
-        //   payment.orderId,
-        //   OrderStatus.PAID,
-        //   'SYSTEM_INTERNAL_TOKEN',
-        // );
       }
     }
 

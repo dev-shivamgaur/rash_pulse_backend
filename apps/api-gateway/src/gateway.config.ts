@@ -34,5 +34,12 @@ export const GATEWAY_SERVICE_ROUTES: GatewayServiceRoute[] = [
     targetEnvKey: 'PAYMENT_SERVICE_URL',
     defaultTarget: 'http://localhost:5004',
     docsJsonPath: '/api/v1/docs-json/payments'
+  },
+  {
+    name: 'Notification Service',
+    gatewayPrefix: "/api/v1/notifications",
+    targetEnvKey: 'NOTIFICATION_SERVER_URL',
+    defaultTarget: 'http://localhost:5005',
+    docsJsonPath: '/api/v1/docs-json/notifications'
   }
 ];

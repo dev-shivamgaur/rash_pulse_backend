@@ -22,8 +22,12 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@rash-pulse/swagger": ["libs/swagger/src"],
-      "@rash-pulse/swagger/*": ["libs/swagger/src/*"]
+      "@rash-pulse/swagger": [
+        "libs/swagger/src"
+      ],
+      "@rash-pulse/swagger/*": [
+        "libs/swagger/src/*"
+      ]
     }
   }
 }

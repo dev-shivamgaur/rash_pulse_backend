@@ -29,6 +29,15 @@
         "tsConfigPath": "apps/auth-service/tsconfig.app.json"
       }
     },
+    "notification-service": {
+      "type": "application",
+      "root": "apps/notification-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/notification-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/notification-service/tsconfig.app.json"
+      }
+    },
     "order-service": {
       "type": "application",
       "root": "apps/order-service",
@@ -38,15 +47,6 @@
         "tsConfigPath": "apps/order-service/tsconfig.app.json"
       }
     },
-    "product-service": {
-      "type": "application",
-      "root": "apps/product-service",
-      "entryFile": "main",
-      "sourceRoot": "apps/product-service/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/product-service/tsconfig.app.json"
-      }
-    },
     "payment-service": {
       "type": "application",
       "root": "apps/payment-service",
@@ -54,6 +54,15 @@
       "sourceRoot": "apps/payment-service/src",
       "compilerOptions": {
         "tsConfigPath": "apps/payment-service/tsconfig.app.json"
+      }
+    },
+    "product-service": {
+      "type": "application",
+      "root": "apps/product-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/product-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/product-service/tsconfig.app.json"
       }
     },
     "swagger": {

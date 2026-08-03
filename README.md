@@ -1,21 +1,23 @@
 # RashPulse Backend
 
-<div align="center">
 
-![NestJS](https://img.shields.io/badge/NestJS-11-EA2845?style=for-the-badge&logo=nestjs&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Prisma-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-ioredis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
-![RabbitMQ](https://img.shields.io/badge/RabbitMQ-AMQP-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+
+NestJS
+TypeScript
+PostgreSQL
+Redis
+RabbitMQ
+Docker
 
 **High-throughput flash-sale backend** built as a NestJS microservices monorepo — API Gateway, OTP auth, Redis inventory locks, RabbitMQ order pipeline, and payments.
 
 [Architecture](#architecture) · [Services](#services) · [Getting Started](#getting-started) · [API Docs](#api-documentation) · [Scripts](#npm-scripts)
 
-</div>
+
 
 ---
+
+
 
 ## Overview
 
@@ -43,56 +45,74 @@ Client / Swagger
 
 ---
 
+
+
 ## Features
 
-| Area | What it does |
-|------|----------------|
-| **Flash sale booking** | Gateway accepts book requests; Product service reserves stock in Redis with TTL locks and surge pricing |
-| **Event-driven orders** | Reservation events publish over RabbitMQ; Order service consumes and persists orders |
-| **OTP authentication** | Phone-number OTP login, device fingerprinting, httpOnly access/refresh cookies |
-| **JWT + RBAC** | Shared JWT guards/roles (`user` / `admin`) across gateway and services |
-| **Payments** | Initiate / verify flow with payment records in Prisma and payment events on RabbitMQ |
-| **Unified Swagger** | Gateway hosts a multi-service docs UI; each service also exposes `/docs` and `/docs-json` |
-| **Independent data stores** | Separate PostgreSQL databases per domain service |
+
+| Area                        | What it does                                                                                            |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Flash sale booking**      | Gateway accepts book requests; Product service reserves stock in Redis with TTL locks and surge pricing |
+| **Event-driven orders**     | Reservation events publish over RabbitMQ; Order service consumes and persists orders                    |
+| **OTP authentication**      | Phone-number OTP login, device fingerprinting, httpOnly access/refresh cookies                          |
+| **JWT + RBAC**              | Shared JWT guards/roles (`user` / `admin`) across gateway and services                                  |
+| **Payments**                | Initiate / verify flow with payment records in Prisma and payment events on RabbitMQ                    |
+| **Unified Swagger**         | Gateway hosts a multi-service docs UI; each service also exposes `/docs` and `/docs-json`               |
+| **Independent data stores** | Separate PostgreSQL databases per domain service                                                        |
+
 
 ---
+
+
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Runtime / Framework | Node.js 18+, NestJS 11 (monorepo via Nest CLI) |
-| Language | TypeScript 5 |
-| Databases | PostgreSQL + Prisma 7 (per-service schemas) |
-| Cache / locks | Redis (`ioredis`) |
-| Messaging | RabbitMQ (`amqplib` / `amqp-connection-manager`) |
-| Auth | JWT (`@nestjs/jwt`, Passport), cookie-parser |
-| Gateway | `http-proxy-middleware` reverse proxy |
-| Docs | `@nestjs/swagger` + shared `@rash-pulse/swagger` lib |
-| Load testing | `autocannon` (`load-test.js`) |
-| Infra (local) | Docker Compose (RabbitMQ management) |
+
+| Layer               | Technology                                           |
+| ------------------- | ---------------------------------------------------- |
+| Runtime / Framework | Node.js 18+, NestJS 11 (mircoservice via Nest CLI)   |
+| Language            | TypeScript 5                                         |
+| Databases           | PostgreSQL + Prisma 7 (per-service schemas)          |
+| Cache / locks       | Redis (`ioredis`)                                    |
+| Messaging           | RabbitMQ (`amqplib` / `amqp-connection-manager`)     |
+| Auth                | JWT (`@nestjs/jwt`, Passport), cookie-parser         |
+| Gateway             | `http-proxy-middleware` reverse proxy                |
+| Docs                | `@nestjs/swagger` + shared `@rash-pulse/swagger` lib |
+| Load testing        | `autocannon` (`load-test.js`)                        |
+| Infra (local)       | Docker Compose (RabbitMQ management)                 |
+
 
 ---
+
+
 
 ## Services
 
-| Service | Default port | Gateway route | Responsibility |
-|---------|--------------|---------------|----------------|
-| **api-gateway** | `8000` | `/api/v1/flash-sale` | Entry point, proxying, flash-sale `book` |
-| **auth-service** | `5001` | `/api/v1/auth` | OTP request/verify, refresh tokens, users |
-| **order-service** | `5002` | `/api/v1/orders` | Order persistence, status, details |
-| **product-service** | `5003` | `/api/v1/products` | Flash-sale start, live stock/price in Redis |
-| **payment-service** | `5004` | `/api/v1/payments` | Payment initiate / verify / records |
-| **notification-service** | `5005` | `/api/v1/notifications` | Notifications (scaffold) |
+
+| Service                  | Default port | Gateway route           | Responsibility                              |
+| ------------------------ | ------------ | ----------------------- | ------------------------------------------- |
+| **api-gateway**          | `8000`       | `/api/v1/flash-sale`    | Entry point, proxying, flash-sale `book`    |
+| **auth-service**         | `5001`       | `/api/v1/auth`          | OTP request/verify, refresh tokens, users   |
+| **order-service**        | `5002`       | `/api/v1/orders`        | Order persistence, status, details          |
+| **product-service**      | `5003`       | `/api/v1/products`      | Flash-sale start, live stock/price in Redis |
+| **payment-service**      | `5004`       | `/api/v1/payments`      | Payment initiate / verify / records         |
+| **notification-service** | `5005`       | `/api/v1/notifications` | Notifications (scaffold)                    |
+
+
+
 
 ### Shared libraries
 
-| Library | Path | Purpose |
-|---------|------|---------|
-| `@rash-pulse/swagger` | `libs/swagger` | Microservice + gateway Swagger helpers |
-| `jwt-shared` | `libs/jwt-shared` | JWT strategy, guards, roles, decorators |
+
+| Library               | Path              | Purpose                                 |
+| --------------------- | ----------------- | --------------------------------------- |
+| `@rash-pulse/swagger` | `libs/swagger`    | Microservice + gateway Swagger helpers  |
+| `jwt-shared`          | `libs/jwt-shared` | JWT strategy, guards, roles, decorators |
+
 
 ---
+
+
 
 ## Flash-sale flow (happy path)
 
@@ -103,6 +123,8 @@ Client / Swagger
 5. **User** pays → Payment service `initiate` / `verify`; payment success/failure events update order state (including refunds).
 
 ---
+
+
 
 ## Prerequisites
 
@@ -118,7 +140,11 @@ Client / Swagger
 
 ---
 
+
+
 ## Getting Started
+
+
 
 ### 1. Clone & install
 
@@ -127,6 +153,8 @@ git clone https://github.com/dev-shivamgaur/rash_pulse_backend.git
 cd rash_pulse_backend
 npm install
 ```
+
+
 
 ### 2. Start RabbitMQ
 
@@ -193,6 +221,8 @@ CORS_ORIGIN=http://localhost:8000
 
 > Never commit real secrets. Keep production secrets in a vault / CI secrets store.
 
+
+
 ### 4. Database migrations
 
 From each Prisma-backed service directory (or with the correct schema path):
@@ -232,7 +262,7 @@ npm run start:payment
 npm run start:notification
 ```
 
-**Gateway only (default `start:dev`):**
+**Gateway only (default** `start:dev`**):**
 
 ```bash
 npm run start:dev
@@ -240,19 +270,25 @@ npm run start:dev
 
 Once up:
 
-| Resource | URL |
-|----------|-----|
-| API Gateway | http://localhost:8000 |
-| Unified Swagger | http://localhost:8000/api/v1/docs |
-| Auth (direct) | http://localhost:5001/docs |
-| Orders (direct) | http://localhost:5002/docs |
-| Products (direct) | http://localhost:5003/docs |
-| Payments (direct) | http://localhost:5004/docs |
-| Notifications (direct) | http://localhost:5005/docs |
+
+| Resource               | URL                                                                    |
+| ---------------------- | ---------------------------------------------------------------------- |
+| API Gateway            | [http://localhost:8000](http://localhost:8000)                         |
+| Unified Swagger        | [http://localhost:8000/api/v1/docs](http://localhost:8000/api/v1/docs) |
+| Auth (direct)          | [http://localhost:5001/docs](http://localhost:5001/docs)               |
+| Orders (direct)        | [http://localhost:5002/docs](http://localhost:5002/docs)               |
+| Products (direct)      | [http://localhost:5003/docs](http://localhost:5003/docs)               |
+| Payments (direct)      | [http://localhost:5004/docs](http://localhost:5004/docs)               |
+| Notifications (direct) | [http://localhost:5005/docs](http://localhost:5005/docs)               |
+
 
 ---
 
+
+
 ## API Documentation
+
+
 
 ### Gateway (recommended)
 
@@ -260,50 +296,72 @@ Open **[http://localhost:8000/api/v1/docs](http://localhost:8000/api/v1/docs)** 
 
 ### Key endpoints (via gateway)
 
+
+
 #### Auth — `/api/v1/auth`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/` | Health check |
-| `POST` | `/request-otp` | Send OTP to phone number |
-| `POST` | `/verify-otp` | Verify OTP; sets `accessToken` / `refreshToken` cookies |
-| `POST` | `/refresh` | Issue new access token from refresh cookie |
-| `GET` | `/allusers` | List users (protected / role-gated) |
+
+| Method | Path           | Description                                             |
+| ------ | -------------- | ------------------------------------------------------- |
+| `GET`  | `/`            | Health check                                            |
+| `POST` | `/request-otp` | Send OTP to phone number                                |
+| `POST` | `/verify-otp`  | Verify OTP; sets `accessToken` / `refreshToken` cookies |
+| `POST` | `/refresh`     | Issue new access token from refresh cookie              |
+| `GET`  | `/allusers`    | List users (protected / role-gated)                     |
+
+
+
 
 #### Flash sale — `/api/v1/flash-sale`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/` | Gateway health |
+
+| Method | Path    | Description                |
+| ------ | ------- | -------------------------- |
+| `GET`  | `/`     | Gateway health             |
 | `POST` | `/book` | Book flash-sale item (JWT) |
+
+
+
 
 #### Products — `/api/v1/products`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/products/health` | Health check |
-| `POST` | `/products/start` | Admin: start flash sale (JWT + admin) |
-| `GET` | `/products/sale-info/:prid` | Live Redis price/stock (JWT + admin) |
+
+| Method | Path                        | Description                           |
+| ------ | --------------------------- | ------------------------------------- |
+| `GET`  | `/products/health`          | Health check                          |
+| `POST` | `/products/start`           | Admin: start flash sale (JWT + admin) |
+| `GET`  | `/products/sale-info/:prid` | Live Redis price/stock (JWT + admin)  |
+
+
+
 
 #### Orders — `/api/v1/orders`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/` | Health check |
-| `GET` | `/status/:trackingId` | Order status by tracking/queue id (JWT) |
-| `GET` | `/get-order/:id` | Order details for current user (JWT) |
+
+| Method | Path                  | Description                             |
+| ------ | --------------------- | --------------------------------------- |
+| `GET`  | `/`                   | Health check                            |
+| `GET`  | `/status/:trackingId` | Order status by tracking/queue id (JWT) |
+| `GET`  | `/get-order/:id`      | Order details for current user (JWT)    |
+
+
+
 
 #### Payments — `/api/v1/payments`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/initiate` | Start payment for an order (JWT) |
-| `POST` | `/verify` | Verify payment (JWT) |
-| `POST` | `/create` | Create payment record (utility / dummy entry) |
+
+| Method | Path        | Description                                   |
+| ------ | ----------- | --------------------------------------------- |
+| `POST` | `/initiate` | Start payment for an order (JWT)              |
+| `POST` | `/verify`   | Verify payment (JWT)                          |
+| `POST` | `/create`   | Create payment record (utility / dummy entry) |
+
 
 Exact request bodies are documented in Swagger DTOs.
 
 ---
+
+
 
 ## Project Structure
 
@@ -328,25 +386,29 @@ rash-pulse-backend/
 
 ---
 
+
+
 ## npm Scripts
 
-| Script | Description |
-|--------|-------------|
-| `npm run start:all` | Watch-mode all six apps via `concurrently` |
-| `npm run start:gateway` | API Gateway (watch) |
-| `npm run start:auth` | Auth service (watch) |
-| `npm run start:order` | Order service (watch) |
-| `npm run start:product` | Product service (watch) |
-| `npm run start:payment` | Payment service (watch) |
-| `npm run start:notification` | Notification service (watch) |
-| `npm run start:dev` | Gateway only (watch) |
-| `npm run build` | Build all applications |
-| `npm run start:prod` | Run built gateway |
-| `npm run start:prod:*` | Run built auth / product / order / payment / notification |
-| `npm run lint` | ESLint with auto-fix |
-| `npm run format` | Prettier on `apps/**` and `libs/**` |
-| `npm run test` | Jest unit tests |
-| `npm run test:cov` | Coverage report |
+
+| Script                       | Description                                               |
+| ---------------------------- | --------------------------------------------------------- |
+| `npm run start:all`          | Watch-mode all six apps via `concurrently`                |
+| `npm run start:gateway`      | API Gateway (watch)                                       |
+| `npm run start:auth`         | Auth service (watch)                                      |
+| `npm run start:order`        | Order service (watch)                                     |
+| `npm run start:product`      | Product service (watch)                                   |
+| `npm run start:payment`      | Payment service (watch)                                   |
+| `npm run start:notification` | Notification service (watch)                              |
+| `npm run start:dev`          | Gateway only (watch)                                      |
+| `npm run build`              | Build all applications                                    |
+| `npm run start:prod`         | Run built gateway                                         |
+| `npm run start:prod:*`       | Run built auth / product / order / payment / notification |
+| `npm run lint`               | ESLint with auto-fix                                      |
+| `npm run format`             | Prettier on `apps/**` and `libs/**`                       |
+| `npm run test`               | Jest unit tests                                           |
+| `npm run test:cov`           | Coverage report                                           |
+
 
 Production entry examples:
 
@@ -358,6 +420,8 @@ npm run start:prod:auth
 ```
 
 ---
+
+
 
 ## Load Testing
 
@@ -373,6 +437,8 @@ Adjust `url`, `connections`, `duration`, and body `productId` in `load-test.js` 
 
 ---
 
+
+
 ## Architecture notes
 
 - **Database-per-service** — Auth, Products, Orders, and Payments each have their own Prisma schema and `DATABASE_URL`.
@@ -383,29 +449,37 @@ Adjust `url`, `connections`, `duration`, and body `productId` in `load-test.js` 
 
 ---
 
+
+
 ## Security checklist
 
-- [ ] Rotate `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` for every environment
-- [ ] Use strong DB passwords; never commit `.env`
-- [ ] Enable HTTPS and `secure` cookies in production
-- [ ] Restrict `CORS_ORIGIN` to real frontend origins
-- [ ] Protect RabbitMQ and Redis with auth in non-local environments
-- [ ] Keep flash-sale admin endpoints behind `admin` role only
+- [x] Rotate `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` for every environment
+- [x] Use strong DB passwords; never commit `.env`
+- [x] Enable HTTPS and `secure` cookies in production
+- [x] Restrict `CORS_ORIGIN` to real frontend origins
+- [x] Protect RabbitMQ and Redis with auth in non-local environments
+- [x] Keep flash-sale admin endpoints behind `admin` role only
 
 ---
+
+
 
 ## Troubleshooting
 
-| Symptom | Likely fix |
-|---------|------------|
-| `ECONNREFUSED` on Postgres | Check `DATABASE_URL` and that the DB exists |
-| Redis connection errors | Start Redis; verify `REDIS_URL` |
-| RabbitMQ connection errors | `docker compose up -d`; verify `amqp://localhost:5672` |
-| Gateway 502 / proxy errors | Start the target microservice; match ports in gateway `.env` |
-| Swagger empty for a service | Ensure that service is running and `SWAGGER_ENABLED=true` |
-| Port already in use | Change `PORT` in the service `.env` or free the port |
+
+| Symptom                     | Likely fix                                                   |
+| --------------------------- | ------------------------------------------------------------ |
+| `ECONNREFUSED` on Postgres  | Check `DATABASE_URL` and that the DB exists                  |
+| Redis connection errors     | Start Redis; verify `REDIS_URL`                              |
+| RabbitMQ connection errors  | `docker compose up -d`; verify `amqp://localhost:5672`       |
+| Gateway 502 / proxy errors  | Start the target microservice; match ports in gateway `.env` |
+| Swagger empty for a service | Ensure that service is running and `SWAGGER_ENABLED=true`    |
+| Port already in use         | Change `PORT` in the service `.env` or free the port         |
+
 
 ---
+
+
 
 ## Contributing
 
@@ -416,11 +490,15 @@ Adjust `url`, `connections`, `duration`, and body `productId` in `load-test.js` 
 
 ---
 
+
+
 ## License
 
 Private / **UNLICENSED** (see `package.json`). Contact the maintainer for usage rights.
 
 ---
+
+
 
 ## Author
 
